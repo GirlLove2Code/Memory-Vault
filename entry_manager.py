@@ -439,11 +439,46 @@ def list_entries(branch: str, include_outdated: bool = True) -> List[dict]:
     return entries
 
 
+def _stem(word: str) -> str:
+    """
+    Simple suffix-stripping stemmer. No dependencies required.
+    Reduces words to a root form so 'launching' matches 'launch'.
+    """
+    if len(word) <= 3:
+        return word
+    # Order matters — check longest suffixes first
+    for suffix in ("ation", "ting", "ment", "ness", "able", "ible", "ally",
+                   "ful", "less", "ing", "ied", "ies", "ion", "ous",
+                   "ive", "ers", "est", "ely", "ity",
+                   "ly", "ed", "er", "al", "en", "es", "ty", "ry", "or", "ar",
+                   "s"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            return word[:-len(suffix)]
+    return word
+
+
+# Common stop words to skip during keyword search
+_STOP_WORDS = frozenset({
+    "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
+    "have", "has", "had", "do", "does", "did", "will", "would", "could",
+    "should", "may", "might", "can", "shall", "to", "of", "in", "for",
+    "on", "with", "at", "by", "from", "as", "into", "about", "than",
+    "after", "before", "between", "through", "during", "and", "but",
+    "or", "nor", "not", "so", "yet", "both", "either", "neither",
+    "it", "its", "i", "me", "my", "we", "our", "you", "your", "he",
+    "she", "they", "them", "his", "her", "this", "that", "what", "how",
+})
+
+
 def search_entries(query: str, branch: str = None) -> List[dict]:
     """
     Keyword search across entries — FALLBACK when vector search is unavailable.
 
-    Simple but functional: checks if query words appear in content.
+    Features:
+    - Case-insensitive matching
+    - Partial/stem matching ('launch' finds 'launching')
+    - Tag matching (query words checked against entry tags)
+    - Stop word filtering (ignores 'the', 'is', 'a', etc.)
 
     Args:
         query: search text
@@ -454,19 +489,47 @@ def search_entries(query: str, branch: str = None) -> List[dict]:
     """
     from branch_manager import list_branches
 
-    query_words = query.lower().split()
-    results = []
+    query_lower = query.lower()
+    query_words = [w for w in query_lower.split() if w not in _STOP_WORDS]
+    if not query_words:
+        query_words = query_lower.split()  # If all stop words, use them anyway
+    query_stems = [_stem(w) for w in query_words]
 
+    results = []
     branches_to_search = [branch] if branch else list_branches()
 
     for b in branches_to_search:
         for entry in list_entries(b):
             content_lower = entry.get("content", "").lower()
-            # Count how many query words appear in the content
-            matches = sum(1 for w in query_words if w in content_lower)
-            if matches > 0:
-                score = matches / len(query_words)
-                results.append({**entry, "score": score})
+            content_words = content_lower.split()
+            content_stems = [_stem(w.strip(".,;:!?\"'()[]")) for w in content_words]
+            tags_lower = [t.lower() for t in entry.get("tags", [])]
+
+            score = 0.0
+            matched = 0
+
+            for i, qw in enumerate(query_words):
+                qs = query_stems[i]
+
+                # Exact substring match (strongest signal)
+                if qw in content_lower:
+                    score += 1.0
+                    matched += 1
+                # Stem match ('launch' matches 'launching')
+                elif qs in content_stems:
+                    score += 0.75
+                    matched += 1
+                # Tag match
+                elif qw in tags_lower or qs in [_stem(t) for t in tags_lower]:
+                    score += 0.5
+                    matched += 1
+
+            if matched > 0:
+                # Normalize by query length, bonus for matching more words
+                relevance = score / len(query_words)
+                coverage = matched / len(query_words)
+                final_score = relevance * 0.7 + coverage * 0.3
+                results.append({**entry, "score": round(final_score, 4)})
 
     # Sort by score descending
     results.sort(key=lambda e: e.get("score", 0), reverse=True)
