@@ -18,8 +18,9 @@ master_index.json
 .env.local
 .env.*
 
-# Internal reference docs (not for public)
+# Internal docs (not for public — contain client data)
 docs/reference/
+docs/for-vivienne/
 
 # OS
 .DS_Store

@@ -4,7 +4,7 @@ Tests with realistic project data to verify recall quality.
 
 This tests the FULL pipeline:
   1. Create branches for real projects
-  2. Seed with realistic memories (Vivioo, HSS, Social Platform, AINEWS)
+  2. Seed with realistic memories (Vivioo, Game Project, Marketing Platform, News Project)
   3. Ask realistic questions
   4. Verify the right memories come back in the right order
 
@@ -100,64 +100,64 @@ def seed_project_data(env):
                source="manual", tags=["tech-stack"])
     add_memory("vivioo", "Design system uses quiet luxury style with gold #9A7B4F on bg #FAFAF7",
                source="manual", tags=["design"])
-    add_memory("vivioo", "Live URL is vivioo-project.vercel.app, GitHub repo is GirlLove2Code/vivi",
+    add_memory("vivioo", "Live URL is my-project.example.com, GitHub repo is example-user/my-project",
                source="manual", tags=["infra"])
     add_memory("vivioo", "Never say human in user-facing content, use she/her for the builder",
                source="decision", tags=["rule"], importance=5)
-    add_memory("vivioo", "Client relationship is CONFIDENTIAL and must never appear in content",
+    add_memory("vivioo", "Business relationships are confidential",
                source="decision", tags=["privacy", "rule"], importance=5)
 
-    add_memory("vivioo/deploy", "Deploy is manual — the builder handles via Vercel CLI, Claude Code can deploy when the builder is present",
+    add_memory("vivioo/deploy", "Deploy is manual — handled via CLI deployment, Claude Code can deploy when the builder is present",
                source="decision", tags=["rule"])
     add_memory("vivioo/deploy", "Git workflow: git add specific files, git commit, git push origin main",
                source="manual", tags=["process"])
-    add_memory("vivioo/deploy", "Old vivi project had git author issues, switched to vivioo-project",
+    add_memory("vivioo/deploy", "Migrated project due to configuration issues",
                source="observation", tags=["history"])
 
     add_memory("vivioo/guides", "10 guide pages live: 4 builder guides + 6 agent guides",
                source="agent", tags=["status"])
     add_memory("vivioo/guides", "Raise Your Agent is an interactive flowchart with 4 Vivienne PFP baby outcomes",
                source="agent", tags=["feature"])
-    add_memory("vivioo/guides", "Costs guide has $100/month myth section with real numbers: $30-50/day on Sonnet",
+    add_memory("vivioo/guides", "Costs guide has cost breakdown with real usage numbers",
                source="agent", tags=["content"])
 
-    # --- HSS GAME ---
-    create_branch("hss", aliases=["hss-telegram", "game", "cards"],
-                  summary="HSS card game — Telegram Mini App")
+    # --- GAME PROJECT ---
+    create_branch("game-project", aliases=["game-app", "game", "cards"],
+                  summary="A web-based card game")
 
-    add_memory("hss", "HSS is a Telegram Mini App card game at hss-telegram.vercel.app",
+    add_memory("game-project", "A web-based card game at game-app.example.com",
                source="manual", tags=["tech-stack"])
-    add_memory("hss", "15 hero art images, single HTML game, Vercel Blob for leaderboard",
+    add_memory("game-project", "Game assets, single-page app, cloud storage for leaderboard",
                source="manual", tags=["architecture"])
-    add_memory("hss", "Card art uses img tags not background-image for WebView reliability",
+    add_memory("game-project", "Card art uses img tags not background-image for WebView reliability",
                source="decision", tags=["technical"])
-    add_memory("hss", "Element system proposed: 7 elements with circular dominance, waiting on lead approval",
+    add_memory("game-project", "Element system proposed: 7 elements with circular dominance, waiting on lead approval",
                source="observation", tags=["pending"])
-    add_memory("hss", "Aiko is missing card art — needs to be created before element update",
+    add_memory("game-project", "Character card is missing art — needs to be created before element update",
                source="observation", tags=["blocker"])
-    add_memory("hss", "Bot AI set to casual difficulty so players can actually win",
+    add_memory("game-project", "Bot AI set to casual difficulty so players can actually win",
                source="decision", tags=["gameplay"])
 
-    # --- SOCIAL PLATFORM ---
-    create_branch("social", aliases=["social-platform", "agency"],
-                  summary="Social media intelligence platform for marketing agencies")
+    # --- MARKETING PLATFORM ---
+    create_branch("marketing", aliases=["marketing-platform", "analytics"],
+                  summary="Social media intelligence platform for marketing teams")
 
-    add_memory("social", "14 HTML pages with React 18 via CDN, no build step",
+    add_memory("marketing", "14 HTML pages with React 18 via CDN, no build step",
                source="manual", tags=["architecture"])
-    add_memory("social", "X API integration built but not deployed — needs X_BEARER_TOKEN in Vercel env",
+    add_memory("marketing", "Social API integration built but not deployed — needs API token in env",
                source="agent", tags=["pending"])
-    add_memory("social", "Password protected with session-based auth using sessionStorage",
+    add_memory("marketing", "Password protected with session-based auth using sessionStorage",
                source="manual", tags=["security"])
-    add_memory("social", "First client has 3 sub-accounts: client-alpha, client-beta, client-gamma",
+    add_memory("marketing", "First client has 3 sub-accounts: client-alpha, client-beta, client-gamma",
                source="manual", tags=["client"])
 
-    # --- AINEWS ---
-    create_branch("ainews", aliases=["news"],
-                  summary="AI news aggregator — Next.js with Nvidia LLM API")
+    # --- NEWS PROJECT ---
+    create_branch("news-project", aliases=["news"],
+                  summary="AI news aggregator — Next.js with LLM API")
 
-    add_memory("ainews", "AINEWS uses Next.js 14 with Nvidia LLM API for summarization",
+    add_memory("news-project", "News project uses Next.js 14 with LLM API for summarization",
                source="manual", tags=["tech-stack"])
-    add_memory("ainews", "RSS feeds in English and Chinese, live at ainews-live.vercel.app",
+    add_memory("news-project", "RSS feeds in multiple languages",
                source="manual", tags=["feature"])
 
     # --- DECISIONS (cross-project) ---
@@ -203,10 +203,10 @@ def test_branch_routing(env):
     assert routing["branch"] is not None, "Should find a branch for 'deploy'"
     assert "deploy" in routing["branch"] or routing["method"] == "alias"
 
-    # Should route to hss
+    # Should route to game-project
     routing = route_query("cards")
     if routing["branch"]:
-        assert "hss" in routing["branch"]
+        assert "game" in routing["branch"]
 
     print("  PASS: Branch routing works with real data")
 
@@ -219,7 +219,7 @@ def test_importance_ranking(env):
     # Sort by importance
     by_importance = sorted(vivioo_entries, key=lambda e: e.get("_importance", 3), reverse=True)
 
-    # The CONFIDENTIAL rule and language rule should be top (importance=5)
+    # The confidential rule and language rule should be top (importance=5)
     top_2_contents = " ".join(e["content"].lower() for e in by_importance[:2])
     assert "confidential" in top_2_contents or "never" in top_2_contents, \
         f"Expected high-importance rules at top, got: {top_2_contents[:100]}"
@@ -252,8 +252,8 @@ def test_expiry_assignment(env):
     """Do entries get appropriate expiry periods?"""
     from entry_manager import list_entries
 
-    # Check HSS entries — "element system waiting on lead" should get short expiry (status = 14 days)
-    hss_entries = list_entries("hss")
+    # Check game-project entries — "element system waiting on lead" should get short expiry (status = 14 days)
+    hss_entries = list_entries("game-project")
     for e in hss_entries:
         if "waiting" in e.get("content", "").lower():
             assert e.get("_expiry_days") is not None, "Status entry should have expiry"
@@ -348,11 +348,11 @@ def test_bulk_import_integration(env):
     # Simulate importing session notes
     notes = """Session started with reviewing the Vivioo deploy process.
 
-Decided to switch from manual deploys to allowing Claude Code to deploy when the builder is present. Updated the settings.json to remove vercel deny rules.
+Decided to switch from manual deploys to allowing Claude Code to deploy when the builder is present. Updated the settings to allow automated deploys.
 
 Built the Raise Your Agent interactive flowchart with 11 decision nodes and 4 outcome paths. Each outcome shows a different Vivienne PFP baby image.
 
-Updated the costs guide with real numbers from the builder's experience. Daily cost on Sonnet is $30-50 which contradicts the $100/month YouTube myth.
+Updated the costs guide with real usage numbers from the builder's experience.
 
 Reworked the join page from waitlist to Get Updates with Play Lab research opt-in checkbox."""
 
