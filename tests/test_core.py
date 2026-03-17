@@ -154,10 +154,10 @@ def test_alias_routing():
     env = TestSetup()
     try:
         create_branch("knowledge-base/marketing", aliases=["marketing", "growth"])
-        create_branch("company-1", aliases=["agency"])
+        create_branch("company-1", aliases=["alias-1"])
 
         assert find_branch_by_alias("marketing") == "knowledge-base/marketing"
-        assert find_branch_by_alias("agency") == "company-1"
+        assert find_branch_by_alias("alias-1") == "company-1"
         assert find_branch_by_alias("unknown") is None
 
         print("  PASS: Alias routing works")

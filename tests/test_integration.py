@@ -102,7 +102,7 @@ def seed_project_data(env):
                source="manual", tags=["design"])
     add_memory("vivioo", "Live URL is my-project.example.com, GitHub repo is example-user/my-project",
                source="manual", tags=["infra"])
-    add_memory("vivioo", "Never say human in user-facing content, use she/her for the builder",
+    add_memory("vivioo", "Never say human in user-facing content, use they/them for the brand",
                source="decision", tags=["rule"], importance=5)
     add_memory("vivioo", "Business relationships are confidential",
                source="decision", tags=["privacy", "rule"], importance=5)
@@ -116,7 +116,7 @@ def seed_project_data(env):
 
     add_memory("vivioo/guides", "10 guide pages live: 4 builder guides + 6 agent guides",
                source="agent", tags=["status"])
-    add_memory("vivioo/guides", "Raise Your Agent is an interactive flowchart with 4 Vivienne PFP baby outcomes",
+    add_memory("vivioo/guides", "Raise Your Agent is an interactive flowchart with 4 character illustration outcomes",
                source="agent", tags=["feature"])
     add_memory("vivioo/guides", "Costs guide has cost breakdown with real usage numbers",
                source="agent", tags=["content"])
@@ -350,7 +350,7 @@ def test_bulk_import_integration(env):
 
 Decided to switch from manual deploys to allowing Claude Code to deploy when the builder is present. Updated the settings to allow automated deploys.
 
-Built the Raise Your Agent interactive flowchart with 11 decision nodes and 4 outcome paths. Each outcome shows a different Vivienne PFP baby image.
+Built the Raise Your Agent interactive flowchart with 11 decision nodes and 4 outcome paths. Each outcome shows a different character illustration.
 
 Updated the costs guide with real usage numbers from the builder's experience.
 

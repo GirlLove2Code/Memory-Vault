@@ -28,11 +28,11 @@ BRANCHES = {
     "outreach/{client}/videos": "YouTube videos researched for {client}. Stores video URL, title, channel, view count, relevance notes, and date found. Prevents duplicate suggestions.",
     "outreach/{client}/comments": "Comment performance data for {client}. Tracks which comments were posted, engagement (likes, replies), what angles worked, and lessons learned.",
     "outreach/{client}/creators": "YouTube creator/channel profiles relevant to {client}. Stores channel name, subscriber count, content focus, audience overlap, posting frequency, and best time to engage.",
-    "outreach/{client}/talking-points": "Product talking points and messaging for {client}. Key features, differentiators, community angles, and approved language. Updated by E.",
+    "outreach/{client}/talking-points": "Product talking points and messaging for {client}. Key features, differentiators, community angles, and approved language. Updated by the builder.",
 
     # Shared branches (not per-client)
     "outreach/strategy": "Outreach strategy and patterns that work across all clients. Best comment angles, optimal video characteristics, timing insights, and general lessons.",
-    "outreach/blacklist": "Videos and channels to avoid. Includes competitor channels, controversial creators, and any that E has flagged as off-limits.",
+    "outreach/blacklist": "Videos and channels to avoid. Includes competitor channels, controversial creators, and any that the builder has flagged as off-limits.",
 }
 
 

@@ -15,7 +15,7 @@ master_index.json
 
 # Blocklist (not released yet — keep local until tested)
 blocklist.json
-blocklist-for-vivi.json
+blocklist-draft.json
 blocklist.example.json
 content_guard.py
 
@@ -26,8 +26,8 @@ content_guard.py
 
 # Internal docs and agent-specific files
 docs/reference/
-docs/for-vivienne/
-send-to-vivienne/
+docs/agent-private/
+send-to-agent/
 
 # OS
 .DS_Store

@@ -179,7 +179,7 @@ vivioo-memory/
 │   └── test_integration.py  ← 12 integration tests
 └── docs/
     ├── ARCHITECTURE.md        ← Code-level architecture map
-    ├── VIVIENNE_GUIDE.md      ← Guide for agents using this system (includes filing rules)
+    ├── AGENT_GUIDE.md         ← Guide for agents using this system (includes filing rules)
     ├── RETRIEVAL_QUALITY.md   ← How search quality works
     ├── WHATS_NEW_v04.md       ← Changelog
     ├── AUTO_CAPTURE_SPEC.md   ← Future spec: auto-capture from conversations

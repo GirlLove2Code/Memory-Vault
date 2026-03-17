@@ -252,13 +252,13 @@ Ask yourself these questions in order:
 
 | If the memory is about... | File it in | Example |
 |---------------------------|-----------|---------|
-| Marketing strategy, campaigns, content | `knowledge-base/marketing` | "Story-first campaigns work best for gaming" |
+| Marketing strategy, campaigns, content | `knowledge-base/marketing` | "Story-first campaigns work best" |
 | Security tips, threats, red flags | `knowledge-base/security` | "Rotate API keys every 90 days" |
 | Coding patterns, tech how-tos | `knowledge-base` (top level) | "Next.js App Router uses folder-based routing" |
 | The Vivioo website or platform | `shared-projects/vivioo` | "Gold accent is #9A7B4F" |
 | This memory system itself | `shared-projects/memory-system` | "Minimum relevance threshold is 0.65" |
-| Agency client work | `company-1` | "Client X campaign launched Q1" |
-| Gaming company work | `company-2` | "Game mechanics updated" |
+| Company 1 work | `company-1` | "Client campaign launched Q1" |
+| Company 2 work | `company-2` | "Project milestones updated" |
 | Builder's personal info, preferences, contacts | `about-builder` | "The builder prefers iterative building" |
 | A new project the builder mentions | `shared-projects/{new-project}` | Create the branch first, then file |
 
@@ -285,7 +285,7 @@ File it in that branch. If the answer is "I'd search two branches," pick the mos
 - **Branch** = WHERE it lives (one per entry, permanent home)
 - **Tags** = WHAT it's about (multiple per entry, for cross-referencing)
 
-Example: A memory about "marketing strategy for a gaming client" goes in `company-2` (because it's client-specific) with tags `["marketing", "strategy"]` (so it surfaces in marketing searches too).
+Example: A memory about "marketing strategy for a specific client" goes in `company-2` (because it's client-specific) with tags `["marketing", "strategy"]` (so it surfaces in marketing searches too).
 
 **Rule of thumb:** If it's sensitive or company-specific → branch wins. If it's general knowledge → topic branch wins.
 

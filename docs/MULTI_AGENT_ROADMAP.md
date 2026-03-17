@@ -78,7 +78,7 @@ branches/
 ```json
 {
   "branch": "knowledge-base/marketing",
-  "themes": ["story-first campaigns", "content strategy", "growth hacking", "Web3 gaming"],
+  "themes": ["story-first campaigns", "content strategy", "growth hacking", "community building"],
   "top_entries": ["mem-abc (importance 5): ...", "mem-def (importance 4): ..."],
   "avg_importance": 3.8,
   "sources": {"manual": 4, "agent": 6, "auto-capture": 2},
