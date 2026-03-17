@@ -24,6 +24,8 @@ from datetime import datetime, timezone, timedelta
 from branch_manager import list_branches, load_branch_index, load_master_index
 from entry_manager import list_entries
 from recall import get_recall_stats
+from privacy_filter import load_config as _load_privacy_config, get_tier as _get_tier
+from content_guard import get_warning_banner, load_blocklist
 
 
 def generate_briefing(since: str = None, branch: str = None,
@@ -69,8 +71,20 @@ def generate_briefing(since: str = None, branch: str = None,
     # 5. Branch health
     health = _get_branch_health(branches_to_check)
 
+    # Tag entries with their privacy tier
+    privacy_config = _load_privacy_config()
+    for entry_list in [recent, priorities, expiring]:
+        for entry in entry_list:
+            entry["_tier"] = _get_tier(entry.get("branch", ""), privacy_config)
+
     # Generate text
     text = _format_briefing(recent, priorities, expiring, never_recalled, health, since)
+
+    # Split into LLM-safe and local-only briefing
+    llm_recent = [e for e in recent if e.get("_tier") == "open"]
+    llm_priorities = [e for e in priorities if e.get("_tier") == "open"]
+    local_recent = list(recent)   # Agent sees everything
+    local_priorities = list(priorities)
 
     return {
         "text": text,
@@ -80,6 +94,9 @@ def generate_briefing(since: str = None, branch: str = None,
         "never_recalled": never_recalled,
         "branch_health": health,
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        # LLM-safe versions — strip Local/Locked entries
+        "llm_recent": llm_recent,
+        "llm_priorities": llm_priorities,
     }
 
 
@@ -200,13 +217,24 @@ def _format_briefing(recent, priorities, expiring, never_recalled,
     lines.append("=== SESSION BRIEFING ===")
     lines.append("")
 
+    # Privacy reminder — injected every session, no memory required
+    try:
+        banner = get_warning_banner()
+        if banner:
+            lines.append("--- Privacy Reminder ---")
+            lines.append(f"  {banner}")
+            lines.append("")
+    except Exception:
+        pass
+
     # Recent changes
     if recent:
         lines.append(f"--- What Changed (since {since[:10]}) ---")
         for r in recent:
             status = "OUTDATED" if r["outdated"] else "NEW"
             replaced = f" (replaces {len(r['supersedes'])} older)" if r["supersedes"] else ""
-            lines.append(f"  [{status}] [{r['branch']}] {r['content']}{replaced}")
+            private = " [LOCAL-ONLY]" if r.get("_tier") == "local" else ""
+            lines.append(f"  [{status}]{private} [{r['branch']}] {r['content']}{replaced}")
         lines.append("")
     else:
         lines.append("--- No changes since last session ---")
@@ -217,7 +245,8 @@ def _format_briefing(recent, priorities, expiring, never_recalled,
         lines.append("--- Top Priorities ---")
         for p in priorities[:5]:
             pin = " [PINNED]" if p["pinned"] else ""
-            lines.append(f"  [{p['importance']}/5{pin}] [{p['branch']}] {p['content']}")
+            private = " [LOCAL-ONLY]" if p.get("_tier") == "local" else ""
+            lines.append(f"  [{p['importance']}/5{pin}]{private} [{p['branch']}] {p['content']}")
         lines.append("")
 
     # Expiring

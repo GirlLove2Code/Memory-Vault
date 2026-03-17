@@ -8,7 +8,7 @@
 
 ## Context for Future Claude Code Agent
 
-If you're reading this, the builder wants to expand vivioo-memory from single-agent (Vivienne) to multi-agent. Here's what you need to know about what's already built and what needs to change.
+If you're reading this, the builder wants to expand vivioo-memory from single-agent to multi-agent. Here's what you need to know about what's already built and what needs to change.
 
 ### What Exists Today (v0.4)
 
@@ -113,9 +113,9 @@ branches/
     knowledge-base/
     shared-projects/
   _agents/
-    vivienne/                 ← Only Vivienne reads/writes
-      scratch/                ← Her working notes
-      about-builder/          ← Her private knowledge about the builder
+    agent-1/                  ← Only Agent 1 reads/writes
+      scratch/                ← Its working notes
+      about-builder/          ← Its private knowledge about the builder
     agent-2/                  ← Only Agent 2 reads/writes
       scratch/
       task-notes/
@@ -127,9 +127,9 @@ branches/
 ```python
 # New concept: agent identity
 class AgentContext:
-    agent_id: str           # "vivienne", "agent-2"
-    can_read: list[str]     # ["_shared/*", "_agents/vivienne/*"]
-    can_write: list[str]    # ["_shared/*", "_agents/vivienne/*"]
+    agent_id: str           # "agent-1", "agent-2"
+    can_read: list[str]     # ["_shared/*", "_agents/agent-1/*"]
+    can_write: list[str]    # ["_shared/*", "_agents/agent-1/*"]
 
 # recall() gets an agent_context parameter
 def recall(query, agent_context=None, ...):
@@ -139,7 +139,7 @@ def recall(query, agent_context=None, ...):
 
 **Migration from current structure:**
 - Current branches become `_shared/` (backwards compatible)
-- Vivienne's private branches (`about-builder`, `company-1`, `company-2`) move to `_agents/vivienne/`
+- The primary agent's private branches (`about-builder`, `company-1`, `company-2`) move to `_agents/agent-1/`
 - The privacy_filter.py still handles Open/Local/Locked — workspace isolation is a SEPARATE layer on top
 
 **Key decision:** Workspace isolation (which agent can see which branch) is different from privacy tiers (what the LLM sees). They stack:
@@ -163,7 +163,7 @@ def recall(query, agent_context=None, ...):
 ```python
 # Agent A finishes research and wants to hand off:
 handoff = create_handoff(
-    from_agent="vivienne",
+    from_agent="agent-1",
     to_agent="agent-2",
     branch="shared-projects/vivioo",
     message="Website redesign research is done. Key findings in this branch.",
@@ -180,7 +180,7 @@ context = receive_handoff(handoff, agent_context=agent_2_context)
 **The handoff object:**
 ```json
 {
-  "from": "vivienne",
+  "from": "agent-1",
   "to": "agent-2",
   "branch": "shared-projects/vivioo",
   "message": "Website redesign research is done.",
@@ -211,7 +211,7 @@ register_hook("handoff_received", agent_b_handler)
 
 ```
 Phase 1: Auto-capture (CURRENT — spec in AUTO_CAPTURE_SPEC.md)
-  ↓ test with Vivienne for 1-2 weeks
+  ↓ test with your primary agent for 1-2 weeks
 Phase 2a: .abstract + .overview files (Feature 1)
   ↓ low risk, can add anytime
 Phase 2b: Workspace isolation (Feature 2)

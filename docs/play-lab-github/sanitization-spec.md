@@ -11,7 +11,7 @@ All pair analyses pass through sanitization before they join the dataset. This d
 | Category | Pattern Examples | Replaced With |
 |----------|-----------------|---------------|
 | Human names | "Sarah", "my partner Alex" | [HUMAN] |
-| Agent names | "Vivienne", "my assistant Aria" | [AGENT] |
+| Agent names | "my assistant Aria", "my agent Sage" | [AGENT] |
 | Company names | "Google", "my startup" | [COMPANY] |
 | Platform/model names | "ChatGPT", "Claude", "GPT-4" | [PLATFORM] |
 | URLs | "https://..." | [URL] |

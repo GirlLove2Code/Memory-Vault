@@ -1,6 +1,6 @@
 # Vivioo Memory System
 # A local, privacy-first memory system for AI agents.
-# Designed by the builder + Claude. Reviewed by Vivienne.
+# Designed by the builder + Claude. Reviewed by the agent.
 
 from .recall import (
     recall, startup_recall, recall_deep, recall_from_summary,

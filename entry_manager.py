@@ -46,6 +46,15 @@ def add_memory(branch: str, content: str, happened_at: str = None,
         The created entry dict with id.
         If conflicts were resolved, entry["_resolved"] lists outdated entry IDs.
     """
+    # --- CONTENT GUARD: check for private data in Open branches ---
+    try:
+        from content_guard import check_before_save
+        guard_result = check_before_save(content, branch)
+        if not guard_result["allowed"]:
+            raise ValueError(guard_result["warning"])
+    except ImportError:
+        pass  # content_guard not installed — skip check
+
     entries_dir = get_entries_dir(branch)
     os.makedirs(entries_dir, exist_ok=True)
 
@@ -214,7 +223,7 @@ def mark_outdated(entry_id: str, branch: str, reason: str = None) -> Optional[di
     The entry stays in the store but:
     - Gets deprioritized in search results (scored lower)
     - Tagged with _outdated: True
-    - Vivienne can still access it but knows it's old info
+    - The agent can still access it but knows it's old info
 
     Use when: info changed, correction happened, strategy shifted.
 

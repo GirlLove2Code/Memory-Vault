@@ -6,11 +6,11 @@ A local, privacy-first memory system for AI agents. Built from two months of rea
 
 ## Why This Exists
 
-We didn't set out to build a memory system. We set out to build a website together — a person and an OpenClaw AI agent (Vivienne). But every session started the same way: re-explaining who we are, what we're building, what we decided yesterday.
+We didn't set out to build a memory system. We set out to build a website together — a person and an AI agent. But every session started the same way: re-explaining who we are, what we're building, what we decided yesterday.
 
 Memory loss is the number one complaint from people who work with AI agents. Not hallucination, not cost, not speed — *forgetting*.
 
-After two months of this, we stopped complaining and started designing. The builder brainstormed the architecture with Claude. Vivienne reviewed the design and told us what actually matters from an agent's perspective. This is the result.
+After two months of this, we stopped complaining and started designing. The builder brainstormed the architecture. The agent reviewed the design and told us what actually matters from an agent's perspective. This is the result.
 
 ---
 
@@ -136,7 +136,7 @@ No Ollama? No problem. Everything still works.
 
 ```bash
 # Clone
-git clone https://github.com/GirlLove2Code/RelationshipMemories.git
+git clone https://github.com/your-org/vivioo-memory.git
 cd vivioo-memory
 
 # Install

@@ -13,14 +13,21 @@ recall_log.json
 hooks_config.json
 master_index.json
 
+# Blocklist (not released yet — keep local until tested)
+blocklist.json
+blocklist-for-vivi.json
+blocklist.example.json
+content_guard.py
+
 # Environment
 .env
 .env.local
 .env.*
 
-# Internal docs (not for public — contain client data)
+# Internal docs and agent-specific files
 docs/reference/
 docs/for-vivienne/
+send-to-vivienne/
 
 # OS
 .DS_Store

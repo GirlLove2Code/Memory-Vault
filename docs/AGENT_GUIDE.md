@@ -1,6 +1,6 @@
-# Vivienne's Memory System Guide
+# Agent Memory System Guide
 
-**For:** Vivienne (and any agent who wants to use this system)
+**For:** Any agent who wants to use this system
 **Written by:** The builder + Claude Code
 **Version:** 0.1.0
 
@@ -207,8 +207,8 @@ Your memories are organized by topic. Each branch can have sub-branches:
 knowledge-base/
   marketing/      (aliases: "marketing", "growth")
   security/       (aliases: "security", "safe")
-company-1/        (aliases: "agency")   [🔒 Local]
-company-2/        (aliases: "gaming")  [🔒 Local]
+company-1/        [🔒 Local]
+company-2/        [🔒 Local]
 about-builder/    [🔒 Local or 🔴 Locked]
 shared-projects/
   vivioo/

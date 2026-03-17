@@ -1,6 +1,6 @@
 # vivioo-memory v0.4.0 — What's New
 
-**For the builder and Vivienne.** This is everything that changed since the original v0.1 build.
+**For the builder and the agent.** This is everything that changed since the original v0.1 build.
 
 ---
 
@@ -54,7 +54,7 @@ python3 garbage_collect.py --apply      # archive outdated entries
 
 ---
 
-## For Vivienne — What Changed in Your Workflow
+## For the Agent — What Changed in Your Workflow
 
 ### Session start: use the briefing
 Instead of loading raw memories:

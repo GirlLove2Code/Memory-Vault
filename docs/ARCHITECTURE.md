@@ -88,7 +88,7 @@ Someone asks a question
 | `apply_quality_filters(results)` | Score + filter results by quality | Internal — called by recall() |
 | `get_recall_stats(entry_id, branch)` | See which entries are actually used | Periodic review, garbage collection |
 | `format_for_context(entries)` | Format for LLM context window | When sending to an LLM |
-| `format_for_vivienne(entries)` | Format for agent's private reasoning | When reading privately |
+| `format_for_agent(entries)` | Format for agent's private reasoning | When reading privately |
 
 ### entry_manager.py — CRUD + INTELLIGENCE
 **Where memories are created, scored, and linked.**

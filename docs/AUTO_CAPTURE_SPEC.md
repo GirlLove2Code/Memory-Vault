@@ -1,8 +1,8 @@
 # Auto-Capture Spec — v0.5
 
-**Problem:** Vivi has to manually call `add_memory()` every time she learns something. She forgets to save most of what matters. Result: fish memory.
+**Problem:** The agent has to manually call `add_memory()` every time it learns something. It forgets to save most of what matters. Result: fish memory.
 
-**Solution:** Intercept conversation events and automatically extract + file memories. Vivi stops thinking about saving — the system does it for her.
+**Solution:** Intercept conversation events and automatically extract + file memories. The agent stops thinking about saving — the system does it automatically.
 
 **Inspired by:** claude-mem (silent interceptor), OpenViking (lifecycle monitoring)
 
@@ -22,7 +22,7 @@ Classifier: "Is this worth remembering?"
        ↓
 add_memory() runs (scoring, conflict detection, hooks all fire)
        ↓
-Vivi never had to think about it
+The agent never had to think about it
 ```
 
 ---
@@ -46,7 +46,7 @@ Vivi never had to think about it
 
 | Signal | Example | Why skip |
 |--------|---------|----------|
-| Greetings | "Hey Vivi" | No information |
+| Greetings | "Hey" | No information |
 | Acknowledgments | "ok", "thanks", "cool" | No information |
 | Questions without answers | "What should we do?" | Incomplete — wait for answer |
 | Code output / logs | Stack traces, build output | Too noisy, changes fast |
@@ -148,7 +148,7 @@ def route_to_branch(content: str, context: dict) -> str:
 New concept: `_inbox` — a temporary holding branch for memories the system isn't sure about.
 
 - Auto-capture puts uncertain memories here
-- Vivi (or the builder) reviews periodically and moves them to the right branch
+- The agent (or the builder) reviews periodically and moves them to the right branch
 - Keeps the real branches clean
 - Gets a briefing line: "You have 3 memories in inbox waiting for filing"
 
@@ -156,12 +156,12 @@ New concept: `_inbox` — a temporary holding branch for memories the system isn
 
 ## Integration Points
 
-### For OpenClaw (Vivi's current setup):
+### For OpenClaw (your agent's current setup):
 
-Auto-capture hooks into Vivi's conversation flow:
+Auto-capture hooks into the agent's conversation flow:
 
 ```python
-# In Vivi's session handler (or as an OpenClaw hook):
+# In the agent's session handler (or as an OpenClaw hook):
 from auto_capture import process_exchange
 
 def on_message(user_message, agent_response):
@@ -177,7 +177,7 @@ def on_message(user_message, agent_response):
 
     for capture in captures:
         # Each capture is already saved via add_memory()
-        # Just log it so Vivi knows what was auto-saved
+        # Just log it so the agent knows what was auto-saved
         print(f"Auto-saved: {capture['branch']} — {capture['content'][:60]}...")
 ```
 
@@ -325,8 +325,8 @@ When you're ready for multi-agent:
 - Create `_inbox` branch
 - Tests for classify, extract, route
 
-### Phase 2: Integration (when Vivi is stable)
-- Hook into Vivi's OpenClaw conversation loop
+### Phase 2: Integration (when the agent is stable)
+- Hook into your agent's conversation loop
 - Test with 1 day of real conversations
 - Tune confidence thresholds based on results
 
@@ -359,7 +359,7 @@ vivioo-memory/
 ## Success Metrics
 
 After 1 week of auto-capture:
-- **Capture rate:** 5-15 memories per day (from ~0 today when Vivi forgets)
+- **Capture rate:** 5-15 memories per day (from ~0 today when the agent forgets)
 - **Precision:** 80%+ of auto-captures are actually worth keeping
 - **Inbox size:** <10 items waiting for review at any time
 - **Duplicate rate:** <5% duplicates getting through

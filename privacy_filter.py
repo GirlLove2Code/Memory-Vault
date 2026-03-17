@@ -4,7 +4,7 @@ The bouncer. Controls what the LLM sees and what stays private.
 
 Three tiers:
   🟢 Open   — safe to send to LLM
-  🔒 Local  — Vivienne reads, LLM never sees
+  🔒 Local  — Agent reads, LLM never sees
   🔴 Locked — encrypted, requires passphrase to access
 
 This runs LOCALLY. Nothing in this file sends data anywhere.
@@ -26,7 +26,7 @@ def load_config(config_path: str = None) -> dict:
         return {
             "security_tiers": {
                 "open": "Safe to send to LLM",
-                "local": "Vivienne reads privately",
+                "local": "Agent reads privately",
                 "locked": "Encrypted, requires passphrase",
             },
             "defaults": {
@@ -121,11 +121,11 @@ def filter_for_llm(entries: List[Dict], config: dict = None) -> Tuple[List[Dict]
         (llm_context, local_context)
 
         llm_context:  entries the LLM can see (🟢 Open only)
-        local_context: entries Vivienne reads privately (🟢 Open + 🔒 Local)
+        local_context: entries the agent reads privately (🟢 Open + 🔒 Local)
 
         🔴 Locked entries are excluded from BOTH unless unlocked this session.
 
-    Each returned entry has '_tier' added to it so Vivienne knows the tier.
+    Each returned entry has '_tier' added to it so the agent knows the tier.
     """
     if config is None:
         config = load_config()
@@ -142,7 +142,7 @@ def filter_for_llm(entries: List[Dict], config: dict = None) -> Tuple[List[Dict]
             llm_context.append(entry_with_tier)
             local_context.append(entry_with_tier)
         elif tier == "local":
-            # Vivienne reads it, LLM doesn't
+            # Agent reads it, LLM doesn't
             local_context.append(entry_with_tier)
         elif tier == "locked":
             # Check if unlocked this session

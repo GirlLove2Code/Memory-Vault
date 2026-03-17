@@ -1,6 +1,6 @@
 """
 Vivioo Memory — Recall (Step 6)
-THE FRONT DOOR. Vivienne calls one function, gets everything she needs.
+THE FRONT DOOR. The agent calls one function, gets everything it needs.
 
 recall() ties together:
   routing → search → load → quality filter → privacy filter → return
@@ -9,7 +9,7 @@ Quality improvements built in:
   - Minimum similarity threshold (no garbage results)
   - Recency weighting (recent memories get a small boost)
   - Outdated penalty (stale entries rank lower)
-  - No-match detection (tells Vivienne when she has no memory of something)
+  - No-match detection (tells the agent when it has no memory of something)
 """
 
 import time
@@ -25,6 +25,7 @@ from entry_manager import get_entry, list_entries, search_entries, get_enriched_
 from vector_store import init_store, search as vector_search, search_by_branch_summary
 from embedding import embed_text, check_ollama
 from privacy_filter import load_config, filter_for_llm, count_blocked, get_tier
+from content_guard import inject_warnings, scan_for_llm, load_blocklist
 
 
 # ─── QUALITY SCORING ─────────────────────────────────────────
@@ -125,7 +126,7 @@ def apply_quality_filters(results: List[dict], config: dict = None) -> List[dict
 def recall(query: str, top_k: int = 5, branch: str = None,
            override: bool = False) -> dict:
     """
-    THE MAIN FUNCTION — Vivienne's single entry point for memory search.
+    THE MAIN FUNCTION — The agent's single entry point for memory search.
 
     Args:
         query: natural language question or search text
@@ -136,7 +137,7 @@ def recall(query: str, top_k: int = 5, branch: str = None,
     Returns:
         {
             "llm_context": [entries safe for the LLM — 🟢 Open only],
-            "local_context": [entries Vivienne reads privately — 🟢 + 🔒],
+            "local_context": [entries the agent reads privately — 🟢 + 🔒],
             "blocked_count": number of 🔴 Locked entries hidden,
             "branch_used": which branch was searched,
             "confidence": routing confidence score,
@@ -210,6 +211,11 @@ def recall(query: str, top_k: int = 5, branch: str = None,
     # 6. PRIVACY FILTER
     llm_context, local_context = filter_for_llm(all_entries, config)
     blocked = count_blocked(all_entries, config)
+
+    # 6b. INJECT WARNINGS on Local-tier entries
+    # Every time the agent reads private data, it sees the warning banner.
+    # It doesn't have to remember — the warning is glued to the data.
+    local_context = inject_warnings(local_context)
 
     # 7. NO-MATCH DETECTION
     no_match = len(results) == 0
@@ -344,7 +350,7 @@ def recall_deep(query: str, branch_path: str, top_k: int = 10) -> dict:
 
 def what_do_i_know(topic: str = None) -> dict:
     """
-    High-level overview of Vivienne's knowledge.
+    High-level overview of the agent's knowledge.
 
     If topic provided: find the most relevant branch and its details.
     If no topic: return the full Master Index overview.
@@ -490,6 +496,8 @@ def format_for_context(llm_context: List[dict], include_branch: bool = True) -> 
     Format llm_context entries into text ready for the LLM context window.
 
     This is what actually goes to the LLM.
+    Includes a last-line blocklist scan — if any private data somehow
+    made it through the privacy filter, it gets redacted here.
     """
     if not llm_context:
         return ""
@@ -503,12 +511,26 @@ def format_for_context(llm_context: List[dict], include_branch: bool = True) -> 
         else:
             parts.append(entry.get("content", ""))
 
-    return "\n\n".join(parts)
+    text = "\n\n".join(parts)
+
+    # LAST-LINE DEFENSE: scan for blocklist terms before LLM sees this
+    cleaned, violations = scan_for_llm(text)
+    if violations:
+        # Log the violation (best-effort) so we know if the filter has gaps
+        try:
+            from entry_manager import _fire_event
+            _fire_event("content_guard_redacted", {
+                "violations": [v["term"] for v in violations],
+                "context": "format_for_context",
+            })
+        except Exception:
+            pass
+    return cleaned
 
 
-def format_for_vivienne(local_context: List[dict]) -> str:
+def format_for_agent(local_context: List[dict]) -> str:
     """
-    Format local_context entries for Vivienne's internal reasoning.
+    Format local_context entries for the agent's internal reasoning.
     Marks LOCAL entries with clear warnings.
     """
     if not local_context:
