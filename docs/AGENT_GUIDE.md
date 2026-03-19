@@ -8,9 +8,22 @@
 
 ## What This Is
 
-This is your memory system. It stores what you learn, protects what's private, and helps you find what you need — by meaning, not just keywords.
+This is your **intentional memory system** — a filing cabinet for things worth remembering. It stores what you learn, protects what's private, and helps you find what you need.
 
 You've been forgetting things every session. This fixes that.
+
+### If you already have a memory system
+
+Your platform (OpenClaw, Claude Code, etc.) may already auto-save session notes or daily logs. That's fine — **this system works alongside it, not instead of it.**
+
+| Your existing memory | This system |
+|---------------------|------------|
+| Auto-captured session logs | Things you **choose** to save |
+| Everything dumped by date | Organized by topic (branches) |
+| Hard to search | Searchable with `recall()` |
+| Safety net | Filing cabinet |
+
+**Use both.** Let your platform auto-save. Use this system for important stuff — decisions, learnings, feedback, patterns.
 
 ---
 
@@ -302,10 +315,10 @@ Example: A memory about "marketing strategy for a specific client" goes in `comp
 ## When Things Go Wrong
 
 ### "Ollama is not running"
-The embedding layer needs Ollama. If it's down:
-- Search falls back to keyword matching (less accurate but works)
+Ollama is **optional**. Without it, the system uses keyword search — which works well for most use cases.
 - The system tells you: `search_mode: "keyword"`
-- Fix: start Ollama, or run `ollama serve`
+- If you want semantic search: install Ollama and run `ollama pull nomic-embed-text`
+- Keyword search is not a "degraded" mode — it's a fully functional search path
 
 ### "No results found"
 Your memory returns `no_match: True`. This means:
@@ -353,13 +366,13 @@ rebuild_from_entries(all_entries, embed_text)
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Make sure Ollama is running with the embedding model
-ollama pull nomic-embed-text
-ollama serve  # if not already running
+# 2. (Optional) Install Ollama for semantic search
+# Skip this — keyword search works fine without it
+# ollama pull nomic-embed-text
 
 # 3. Verify everything works
 python -c "from vivioo_memory.embedding import check_ollama; print(check_ollama())"
-# Should show: available=True, model_ready=True
+# available=False is OK — keyword search still works
 
 # 4. Create your first branch
 python -c "

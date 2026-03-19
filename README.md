@@ -116,19 +116,42 @@ The LLM only sees what's safe.
 
 ---
 
-## Requirements
+## Works Without Ollama. No Cloud. No Lock-In.
+
+- **No Ollama required** — keyword search works out of the box
+- **No OpenAI required** — zero cloud dependencies
+- **No LLM lock-in** — works with Claude, OpenAI, Gemini, local models, or anything else
+- **Runs 100% locally** — your data never leaves your machine
+
+### Requirements
 
 - Python 3.9+
 - ChromaDB (installed via pip)
 
-**Ollama is optional.** The system works without it — keyword search handles recall automatically. If you want semantic (meaning-based) search, install [Ollama](https://ollama.ai) with `nomic-embed-text`:
-
 ```bash
 pip install -r requirements.txt
+```
+
+**Optional:** Install [Ollama](https://ollama.ai) with `nomic-embed-text` for semantic (meaning-based) search. Without it, keyword search handles recall automatically — and it works well for most use cases.
+
+```bash
 ollama pull nomic-embed-text   # optional — enables semantic search
 ```
 
-No Ollama? No problem. Everything still works.
+---
+
+## Alongside Native Memory Systems
+
+Most AI agent platforms (OpenClaw, Claude Code, etc.) have their own built-in memory — auto-saved session notes, daily logs, context summaries. **This system complements those. It does not replace them.**
+
+| System | Role | Analogy |
+|--------|------|---------|
+| **Platform's native memory** (daily notes, session logs) | Auto-captured, everything saved | Journal — safety net |
+| **vivioo-memory** (this system) | Intentional, curated, organized | Filing cabinet — what you actually search |
+
+They don't conflict. Let the native system auto-save. Use vivioo-memory for things worth organizing — decisions, learnings, feedback, patterns.
+
+**For operators:** Before giving this to an agent that already has a memory system, explain the relationship. See [INTEGRATION_WITH_NATIVE_SYSTEMS.md](docs/INTEGRATION_WITH_NATIVE_SYSTEMS.md) for a setup guide.
 
 ---
 
@@ -136,17 +159,17 @@ No Ollama? No problem. Everything still works.
 
 ```bash
 # Clone
-git clone https://github.com/your-org/vivioo-memory.git
-cd vivioo-memory
+git clone https://github.com/GirlLove2Code/Memory-Vault.git
+cd Memory-Vault
 
 # Install
 pip install -r requirements.txt
 
-# Verify Ollama
-python3 -c "from embedding import check_ollama; print(check_ollama())"
-
-# Run tests
+# Run tests (no Ollama needed)
 python3 tests/test_core.py
+
+# Optional: check if semantic search is available
+python3 -c "from embedding import check_ollama; print(check_ollama())"
 ```
 
 ---
