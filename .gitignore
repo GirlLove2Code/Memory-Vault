@@ -29,6 +29,15 @@ docs/reference/
 docs/agent-private/
 send-to-agent/
 
+# Operational scripts (business playbooks, client workflows)
+setup_*.py
+*_outreach*.py
+*_workflow*.py
+
+# Agent-specific configs (proxy tokens, client data)
+proxy_config.json
+agents.json
+
 # OS
 .DS_Store
 Thumbs.db

@@ -53,7 +53,7 @@ def check_ollama() -> dict:
                     f"Run: ollama pull {DEFAULT_MODEL}"
                 )
     except Exception as e:
-        result["error"] = f"Ollama not reachable: {str(e)}. Is Ollama running?"
+        result["error"] = f"Ollama not available (optional). Keyword search will be used instead."
 
     return result
 

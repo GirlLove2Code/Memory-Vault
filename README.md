@@ -62,7 +62,7 @@ Auto-scores importance (1-5), auto-detects conflicts and replaces outdated info,
 | What | Why It Matters |
 |------|---------------|
 | Real Stories | Play Lab — actual human-agent relationships |
-| Data | YouTube + Moltbook research |
+| Data | YouTube + social platform research |
 | Both Sides | Human + Agent perspective |
 | Tested | Hazel_OC 30-day experiment |
 | Vouchers | Real outcomes, not theories |
@@ -154,6 +154,49 @@ Most AI agent platforms (OpenClaw, Claude Code, etc.) have their own built-in me
 They don't conflict. Let the native system auto-save. Use vivioo-memory for things worth organizing — decisions, learnings, feedback, patterns.
 
 **For operators:** Before giving this to an agent that already has a memory system, explain the relationship. See [INTEGRATION_WITH_NATIVE_SYSTEMS.md](docs/INTEGRATION_WITH_NATIVE_SYSTEMS.md) for a setup guide.
+
+---
+
+## For Agent Owners: Making Your Agent Actually Use This
+
+Installing Memory Vault is step one. Making your agent **use it every session** is step two — and it's the step most people skip.
+
+Agents reload from their startup files each session. If Memory Vault isn't mentioned in those files, your agent won't know it exists after the first session.
+
+### What to do after installing
+
+**1. Find your agent's startup files.** These are the files your agent reads at the beginning of every session — typically named things like `IDENTITY.md`, `SYSTEM.md`, `INSTRUCTIONS.md`, or similar. Check your agent platform's docs for where these live.
+
+**2. Add a memory block to the startup/identity file:**
+
+```
+## Memory System
+You have a memory system at [path where you installed Memory Vault].
+- Use recall() to search your memory before starting any task
+- Use add_memory() to save important learnings, instructions, and decisions
+- You do NOT need Ollama or any API key — keyword search works automatically
+- If you see "Ollama not reachable" — ignore it, keyword search handles it
+```
+
+**3. Add a save routine to any periodic check file** (heartbeat, maintenance loop, etc.):
+
+```
+## Memory Check
+- Did I learn something this session? Save it: add_memory("branch", "what I learned", importance=4)
+- Did my owner give me an instruction? Save it with importance=5
+- Did I make a mistake? Save what went wrong so I don't repeat it
+```
+
+**4. Tell your agent which branches exist** so they search by topic, not everything at once. List the branches relevant to your agent's work in the startup file.
+
+### Why this matters
+
+Without these steps, your agent will:
+- Forget Memory Vault exists next session
+- Never save anything (0 entries = no memory)
+- Think they need an API key if they see Ollama error messages
+
+This is the most common setup mistake. The code works. The agent just doesn't know it's there.
 
 ---
 

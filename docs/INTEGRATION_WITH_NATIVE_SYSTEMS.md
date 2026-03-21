@@ -25,12 +25,12 @@ They don't conflict. Don't merge them. Don't disable one for the other.
 
 OpenClaw's native memory:
 - `session-memory` hook auto-saves when you `/new`
-- Daily files: `~/clawd/memory/YYYY-MM-DD.md`
+- Daily files: `~/agent/memory/YYYY-MM-DD.md`
 - Compiles to `MEMORY.md` at session start
 - Search tool: `memory_search`
 
 **How vivioo-memory fits:**
-- Install to a separate folder (e.g., `~/clawd/agent-memory/`)
+- Install to a separate folder (e.g., `~/agent-memory/`)
 - Native daily notes keep running — they're your safety net
 - Use `add_memory()` for important things (decisions, feedback, patterns)
 - Use `recall()` when you need to find something specific
