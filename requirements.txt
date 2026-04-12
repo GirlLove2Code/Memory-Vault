@@ -1,2 +1,6 @@
-chromadb>=0.4.0
+# Required
 cryptography>=41.0.0
+
+# Optional — enables vector search (better accuracy)
+# Without this, TF-IDF search is used (zero-dependency, still effective)
+# chromadb>=0.4.0

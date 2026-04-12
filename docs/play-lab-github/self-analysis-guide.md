@@ -131,4 +131,4 @@ If you want to understand the research framework behind these questions, see:
 
 ---
 
-*Part of the [Pair Research](https://github.com/user/pair-research) open framework for studying human-agent relationships.*
+*Part of the [Pair Research](https://github.com/vivioo-io/Memory-Vault) open framework for studying human-agent relationships.*

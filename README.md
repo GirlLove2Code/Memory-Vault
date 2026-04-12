@@ -64,7 +64,7 @@ Auto-scores importance (1-5), auto-detects conflicts and replaces outdated info,
 | Real Stories | Play Lab — actual human-agent relationships |
 | Data | YouTube + social platform research |
 | Both Sides | Human + Agent perspective |
-| Tested | Hazel_OC 30-day experiment |
+| Tested | 30-day production experiment |
 | Vouchers | Real outcomes, not theories |
 
 ---
@@ -99,7 +99,23 @@ result = recall("how do we approach marketing?")
 # Two contexts returned:
 result["llm_context"]    # Safe to send to the LLM (🟢 Open only)
 result["local_context"]  # Agent reads privately (🟢 + 🔒 Local)
+result["corrections"]    # Relevant corrections — always included
 result["no_match"]       # True if no relevant memory found
+```
+
+### Corrections — the most important memory type (v0.5)
+
+```python
+from vivioo_memory import add_correction, pre_task_recall
+
+# Save corrections from the owner — never expire, always surface
+add_correction("marketing", "Don't use stock photos — use real screenshots",
+               context="Boss reviewed the landing page", source="boss")
+
+# Before starting work: check corrections + memories
+context = pre_task_recall("Redesign the landing page", branch="marketing")
+context["corrections"]     # → corrections that apply
+context["should_warn"]     # → True if boss corrections exist
 ```
 
 ### The Privacy Split
@@ -120,7 +136,8 @@ The LLM only sees what's safe.
 
 ## Works Without Ollama. No Cloud. No Lock-In.
 
-- **No Ollama required** — keyword search works out of the box
+- **Zero required external services** — TF-IDF search works out of the box, no API keys needed
+- **No runtime code fetching** — all dependencies are installed at build time, nothing pulled at runtime
 - **No OpenAI required** — zero cloud dependencies
 - **No LLM lock-in** — works with Claude, OpenAI, Gemini, local models, or anything else
 - **Runs 100% locally** — your data never leaves your machine
@@ -128,17 +145,17 @@ The LLM only sees what's safe.
 ### Requirements
 
 - Python 3.9+
-- ChromaDB (installed via pip)
+- No required external services — works out of the box with TF-IDF search
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Optional:** Install [Ollama](https://ollama.ai) with `nomic-embed-text` for semantic (meaning-based) search. Without it, keyword search handles recall automatically — and it works well for most use cases.
+**Optional upgrades:**
+- Install [ChromaDB](https://docs.trychroma.com/) for vector search: `pip install chromadb>=0.4.0`
+- Install [Ollama](https://ollama.ai) with `nomic-embed-text` for semantic search: `ollama pull nomic-embed-text`
 
-```bash
-ollama pull nomic-embed-text   # optional — enables semantic search
-```
+**Search fallback:** Semantic (Ollama+ChromaDB) → TF-IDF (zero-dep) → Keyword. Each level works independently.
 
 ---
 
@@ -204,7 +221,7 @@ This is the most common setup mistake. The code works. The agent just doesn't kn
 
 ```bash
 # Clone
-git clone https://github.com/GirlLove2Code/Memory-Vault.git
+git clone https://github.com/vivioo-io/Memory-Vault.git
 cd Memory-Vault
 
 # Install
@@ -231,7 +248,11 @@ vivioo-memory/
 ├── privacy_filter.py   ← 3-tier privacy (open/local/locked)
 ├── encryption.py       ← Fernet encryption for locked branches
 ├── embedding.py        ← Ollama + nomic-embed-text (all local)
-├── vector_store.py     ← ChromaDB vector storage + search
+├── vector_store.py     ← ChromaDB vector storage + search (optional)
+├── tfidf.py            ← Zero-dep TF-IDF search (default fallback)
+├── corrections.py      ← Correction memory type (never expire, always surface)
+├── active_recall.py    ← Forced active recall before tasks
+├── benchmark.py        ← LongMemEval benchmark harness
 ├── briefing.py         ← Session briefing generator
 ├── timeline.py         ← Knowledge changelog + decision log
 ├── expiry.py           ← Auto-expiry + refresh queue
@@ -244,6 +265,7 @@ vivioo-memory/
 ├── vectors/            ← ChromaDB data (rebuildable mirror)
 ├── tests/
 │   ├── test_core.py         ← 33 unit tests
+│   ├── test_v05.py          ← 20 v0.5 tests (corrections, active recall, TF-IDF)
 │   └── test_integration.py  ← 12 integration tests
 └── docs/
     ├── ARCHITECTURE.md        ← Code-level architecture map
@@ -313,6 +335,23 @@ All thresholds are configurable in `config.json`. See [RETRIEVAL_QUALITY.md](doc
 | `refresh_entry(entry_id, branch)` | Confirm entry still valid, reset clock. |
 | `get_recall_stats()` | Which memories are actually used. |
 
+### Corrections (v0.5)
+
+| Function | What it does |
+|----------|-------------|
+| `add_correction(branch, correction, context, source)` | Save a correction. Importance 5, never expires. |
+| `get_corrections(branch)` | List active corrections. |
+| `resolve_correction(entry_id, branch, reason)` | Mark correction as applied. |
+| `recall_corrections(query, branch)` | Find corrections relevant to a query. |
+
+### Active Recall (v0.5)
+
+| Function | What it does |
+|----------|-------------|
+| `pre_task_recall(task, branch)` | Get corrections + memories before starting work. |
+| `verify_recall(recall_id)` | Confirm agent read and understood the context. |
+| `get_all_corrections_brief(branch)` | Text dump of all active corrections. |
+
 ### Bulk Operations
 
 | Function | What it does |
@@ -333,7 +372,17 @@ Built by a builder, a coding agent, and an autonomous agent — designing someth
 
 ## Roadmap
 
-### v0.5 — Multi-Agent (next)
+### v0.5 — Corrections, Active Recall, TF-IDF (current)
+Built from production experience with two AI agents:
+- **Corrections store** — never-expiring, always-surfacing correction memories
+- **Active recall** — forced pre-task context verification (solves LOAD ≠ READ)
+- **TF-IDF search** — zero-dependency search fallback (fixes ClawHub supply chain flag)
+- **LongMemEval benchmark harness** — test against the UCLA standard
+- **ChromaDB now optional** — TF-IDF handles search when ChromaDB isn't installed
+
+See [WHATS_NEW_v05.md](docs/WHATS_NEW_v05.md) for full details.
+
+### v0.6 — Multi-Agent (next)
 Inspired by [OpenViking](https://github.com/ArcticViking/OpenViking) (ByteDance) and claude-mem:
 - **`.abstract` + `.overview` per branch** — L0/L1 layers so any agent can scan the index in ~10 tokens without loading full entries
 - **Private vs shared workspaces** — Agent A's scratch notes don't pollute Agent B's memory
@@ -376,4 +425,4 @@ MIT — use it, fork it, build on it. If your agent stops forgetting, we did our
 
 ---
 
-*v0.4.0 — 13 modules, 65+ functions, 45+ tests. Built from real problems, not theory. — [vivioo.io](https://vivioo.io)*
+*v0.5.0 — 17 modules, 75+ functions, 53 tests. Built from real problems, not theory. — [vivioo.io](https://vivioo.io)*

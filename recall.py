@@ -143,15 +143,24 @@ def recall(query: str, top_k: int = 5, branch: str = None,
             "confidence": routing confidence score,
             "query": original query echoed back,
             "override": whether override mode was used,
-            "search_mode": "semantic" or "keyword",
+            "search_mode": "semantic" | "tfidf" | "keyword",
             "no_match": True if nothing relevant was found,
             "result_count": total results before privacy split,
+            "corrections": [relevant corrections — always included],
         }
     """
     config = load_config()
     search_mode = "semantic"
     routing_confidence = 1.0
     branch_used = branch or "all"
+
+    # 0. CORRECTIONS — always check first (never skipped)
+    corrections = []
+    try:
+        from corrections import recall_corrections
+        corrections = recall_corrections(query, branch, top_k=5)
+    except Exception:
+        pass
 
     # 1. ROUTE (if branch not specified)
     if branch is None:
@@ -176,10 +185,10 @@ def recall(query: str, top_k: int = 5, branch: str = None,
                 "_is_summary": True,
             }
 
-    # 3. SEARCH
+    # 3. SEARCH — try semantic → TF-IDF → keyword (3-tier fallback)
     results = []
     try:
-        # Try semantic search first
+        # Try semantic search first (requires Ollama + ChromaDB)
         query_embedding = embed_text(query)
         if query_embedding:
             init_store()
@@ -193,9 +202,13 @@ def recall(query: str, top_k: int = 5, branch: str = None,
         else:
             raise RuntimeError("Embedding failed")
     except Exception:
-        # Fallback to keyword search
-        search_mode = "keyword"
-        results = search_entries(query, branch)
+        # Try TF-IDF next (no deps, better than keyword)
+        try:
+            results, search_mode = _tfidf_search(query, branch, top_k * 2)
+        except Exception:
+            # Final fallback: keyword search
+            search_mode = "keyword"
+            results = search_entries(query, branch)
 
     # 4. APPLY QUALITY FILTERS
     results = apply_quality_filters(results, config)
@@ -235,6 +248,7 @@ def recall(query: str, top_k: int = 5, branch: str = None,
         "search_mode": search_mode,
         "no_match": no_match,
         "result_count": len(results),
+        "corrections": corrections,
     }
 
 
@@ -659,3 +673,42 @@ def _save_recall_log(log: dict) -> None:
 
 def _recall_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+# ─── TF-IDF SEARCH FALLBACK ────────────────────────────────
+
+def _tfidf_search(query: str, branch: str = None,
+                  top_k: int = 10) -> tuple:
+    """
+    Search using TF-IDF when semantic search is unavailable.
+    Better than keyword matching — understands term importance.
+
+    Returns:
+        (results_list, "tfidf")
+    """
+    from tfidf import TFIDFIndex
+
+    index = TFIDFIndex()
+
+    # Build index from entries
+    branches_to_search = [branch] if branch else list_branches()
+    entry_map = {}  # doc_id → (entry, branch)
+
+    for b in branches_to_search:
+        for entry in list_entries(b):
+            doc_id = f"{b}/{entry['id']}"
+            enriched = get_enriched_text(entry)
+            index.add(doc_id, enriched)
+            entry_map[doc_id] = entry
+
+    # Search
+    matches = index.search(query, top_k=top_k)
+
+    results = []
+    for doc_id, score in matches:
+        entry = entry_map.get(doc_id)
+        if entry:
+            entry["score"] = score
+            results.append(entry)
+
+    return results, "tfidf"

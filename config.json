@@ -16,7 +16,20 @@
     "ambiguity_gap": 0.1,
     "default_top_k": 5,
     "startup_top_k": 10,
-    "embedding_model": "nomic-embed-text"
+    "embedding_model": "nomic-embed-text",
+    "search_fallback_order": ["semantic", "tfidf", "keyword"],
+    "correction_match_threshold": 0.4
+  },
+  "corrections": {
+    "always_surface": true,
+    "never_expire": true,
+    "default_importance": 5,
+    "sources": ["boss", "self", "peer", "system"]
+  },
+  "active_recall": {
+    "enabled": true,
+    "require_verification": false,
+    "warn_on_critical_corrections": true
   },
   "branch_security": {}
 }

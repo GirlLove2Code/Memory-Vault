@@ -26,4 +26,13 @@ from .hooks import register_hook, register_file_hook, fire_hooks, get_event_log,
 from .auto_summary import update_summary, update_all_summaries, needs_update, get_summary_health
 from .bulk_import import import_file, import_text, import_entries
 
-__version__ = "0.4.0"
+# v0.5 — Corrections, Active Recall, TF-IDF, Benchmark
+from .corrections import (
+    add_correction, get_corrections, resolve_correction, recall_corrections
+)
+from .active_recall import (
+    pre_task_recall, verify_recall, get_all_corrections_brief
+)
+from .tfidf import TFIDFIndex
+
+__version__ = "0.5.0"
