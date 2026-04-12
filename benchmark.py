@@ -1,5 +1,5 @@
 """
-Vivioo Memory — LongMemEval Benchmark Harness (v0.5)
+Memory Vault — LongMemEval Benchmark Harness (v0.5)
 Evaluates Memory Vault against the LongMemEval benchmark (UCLA, ICLR 2025).
 
 LongMemEval tests 5 long-term memory abilities:
@@ -10,95 +10,74 @@ LongMemEval tests 5 long-term memory abilities:
   5. Abstention — say "I don't know" when appropriate
 
 Benchmark data: https://github.com/xiaowu0162/LongMemEval
+Dataset: https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned
 
 Usage:
     from benchmark import run_benchmark, load_benchmark_data
 
-    # Load the benchmark dataset
-    data = load_benchmark_data("/path/to/LongMemEval/data/")
+    # Load the benchmark dataset (use oracle, _s, or _m variant)
+    data = load_benchmark_data("data/longmemeval_oracle.json")
 
     # Run evaluation
     results = run_benchmark(data)
-    print(f"Overall accuracy: {results['accuracy']:.1%}")
-    print(f"By category: {results['by_category']}")
+    print(generate_report(results))
 
-    # Compare with baseline
-    report = generate_report(results)
-    print(report)
+    # Export for official GPT-4o evaluation
+    export_hypotheses(results, "results/memory_vault_hypotheses.jsonl")
 """
 
 import json
 import os
 import time
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timezone
+from typing import List, Dict, Optional
 
 from recall import recall
-from entry_manager import add_memory, list_entries
-from branch_manager import create_branch, list_branches
+from entry_manager import add_memory
+from branch_manager import create_branch
 
 
-def load_benchmark_data(data_dir: str) -> dict:
+def load_benchmark_data(filepath: str) -> dict:
     """
-    Load LongMemEval benchmark data from disk.
+    Load a LongMemEval JSON file.
 
-    Expects the LongMemEval repository structure:
-        data_dir/
-        ├── sessions/          # conversation sessions
-        ├── questions.json     # evaluation questions
-        └── answers.json       # ground truth answers
+    Supports all three variants:
+      - longmemeval_oracle.json (only evidence sessions)
+      - longmemeval_s_cleaned.json (~40 sessions per question)
+      - longmemeval_m_cleaned.json (~500 sessions per question)
 
-    Args:
-        data_dir: path to the LongMemEval data directory
+    Each instance has:
+      question_id, question_type, question, answer,
+      question_date, haystack_sessions, haystack_dates,
+      answer_session_ids
 
     Returns:
-        {
-            "sessions": [...],
-            "questions": [...],
-            "answers": {...},
-            "metadata": {"total_sessions": int, "total_questions": int},
-        }
+        {"instances": [...], "metadata": {...}}
     """
-    result = {"sessions": [], "questions": [], "answers": {}, "metadata": {}}
+    with open(filepath) as f:
+        instances = json.load(f)
 
-    # Load sessions
-    sessions_dir = os.path.join(data_dir, "sessions")
-    if os.path.isdir(sessions_dir):
-        for fname in sorted(os.listdir(sessions_dir)):
-            if fname.endswith(".json"):
-                with open(os.path.join(sessions_dir, fname)) as f:
-                    result["sessions"].append(json.load(f))
+    # Count by category
+    categories = {}
+    for inst in instances:
+        qtype = inst.get("question_type", "unknown")
+        categories[qtype] = categories.get(qtype, 0) + 1
 
-    # Load questions
-    questions_path = os.path.join(data_dir, "questions.json")
-    if os.path.isfile(questions_path):
-        with open(questions_path) as f:
-            result["questions"] = json.load(f)
-
-    # Load answers
-    answers_path = os.path.join(data_dir, "answers.json")
-    if os.path.isfile(answers_path):
-        with open(answers_path) as f:
-            result["answers"] = json.load(f)
-
-    result["metadata"] = {
-        "total_sessions": len(result["sessions"]),
-        "total_questions": len(result["questions"]),
+    return {
+        "instances": instances,
+        "metadata": {
+            "total_questions": len(instances),
+            "categories": categories,
+            "source_file": os.path.basename(filepath),
+        },
     }
 
-    return result
 
-
-def ingest_sessions(sessions: List[dict], branch_prefix: str = "bench") -> dict:
+def ingest_instance(instance: dict, branch_prefix: str = "bench") -> dict:
     """
-    Ingest benchmark sessions into Memory Vault branches.
+    Ingest one benchmark instance's haystack sessions into Memory Vault.
 
-    Each session becomes a branch, each message pair becomes an entry.
-    This simulates real agent usage over time.
-
-    Args:
-        sessions: list of session dicts from load_benchmark_data()
-        branch_prefix: prefix for benchmark branches
+    Each session becomes entries in a branch. Messages are stored with
+    their timestamps to support temporal reasoning.
 
     Returns:
         {"branches_created": int, "entries_added": int, "errors": int}
@@ -107,25 +86,32 @@ def ingest_sessions(sessions: List[dict], branch_prefix: str = "bench") -> dict:
     added = 0
     errors = 0
 
+    sessions = instance.get("haystack_sessions", [])
+    dates = instance.get("haystack_dates", [])
+    session_ids = instance.get("haystack_session_ids", [])
+
     for i, session in enumerate(sessions):
-        branch = f"{branch_prefix}/session-{i:03d}"
+        sid = session_ids[i] if i < len(session_ids) else f"s{i:03d}"
+        branch = f"{branch_prefix}/{sid}"
+        timestamp = dates[i] if i < len(dates) else None
 
         try:
-            summary = session.get("summary", f"Benchmark session {i}")
-            create_branch(branch, summary=summary)
+            create_branch(branch, summary=f"Benchmark session {sid}")
             created += 1
         except Exception:
             pass
 
-        messages = session.get("messages", session.get("turns", []))
-        for j, msg in enumerate(messages):
-            content = msg if isinstance(msg, str) else msg.get("content", "")
-            if not content:
+        # Each session is a list of {"role": ..., "content": ...} turns
+        turns = session if isinstance(session, list) else []
+        for turn in turns:
+            content = turn.get("content", "") if isinstance(turn, dict) else str(turn)
+            if not content or not content.strip():
                 continue
+            role = turn.get("role", "user") if isinstance(turn, dict) else "user"
             try:
-                timestamp = session.get("timestamp")
                 add_memory(
-                    branch, content,
+                    branch,
+                    f"[{role}] {content}",
                     happened_at=timestamp,
                     source="benchmark",
                     auto_resolve=False,
@@ -137,109 +123,128 @@ def ingest_sessions(sessions: List[dict], branch_prefix: str = "bench") -> dict:
     return {"branches_created": created, "entries_added": added, "errors": errors}
 
 
-def evaluate_question(question: dict, ground_truth: str) -> dict:
-    """
-    Evaluate a single benchmark question.
+def clear_benchmark_branches(branch_prefix: str = "bench"):
+    """Remove all benchmark branches to reset between runs."""
+    import shutil
+    branches_dir = os.path.join(os.path.dirname(__file__), "branches")
+    bench_dir = os.path.join(branches_dir, branch_prefix)
+    if os.path.isdir(bench_dir):
+        shutil.rmtree(bench_dir)
 
-    Args:
-        question: {"id": str, "text": str, "category": str, ...}
-        ground_truth: the expected answer
 
-    Returns:
-        {
-            "question_id": str,
-            "category": str,
-            "query": str,
-            "retrieved": [entries found],
-            "ground_truth": str,
-            "recall_hit": True if ground truth content found in retrieved,
-            "search_mode": "semantic" or "keyword",
-            "result_count": int,
-            "latency_ms": int,
-        }
+def evaluate_question(instance: dict) -> dict:
     """
-    query = question.get("text", question.get("query", ""))
-    category = question.get("category", "unknown")
-    qid = question.get("id", "?")
+    Evaluate a single LongMemEval question using Memory Vault recall.
+
+    Uses two scoring methods:
+      1. Retrieval hit — did we retrieve entries containing the answer?
+      2. Word overlap — 60% threshold for partial matches
+
+    Returns per-question result dict.
+    """
+    qid = instance.get("question_id", "?")
+    qtype = instance.get("question_type", "unknown")
+    question = instance.get("question", "")
+    answer = instance.get("answer", "")
+    is_abstention = qid.endswith("_abs")
 
     start = time.time()
-    result = recall(query, top_k=10)
+    result = recall(question, top_k=10)
     latency = int((time.time() - start) * 1000)
 
-    # Check if ground truth is in retrieved entries
+    # Collect all retrieved text
     retrieved_texts = []
     for entry in result.get("local_context", []):
-        retrieved_texts.append(entry.get("content", "").lower())
+        text = entry.get("content", "") if isinstance(entry, dict) else str(entry)
+        retrieved_texts.append(text.lower())
 
-    ground_lower = ground_truth.lower()
-    recall_hit = any(ground_lower in text or text in ground_lower
-                     for text in retrieved_texts if text)
+    no_match = result.get("no_match", False)
 
-    # Also check partial match — ground truth words in retrieved
-    if not recall_hit:
-        gt_words = set(ground_lower.split())
-        for text in retrieved_texts:
-            text_words = set(text.split())
-            overlap = len(gt_words & text_words) / max(len(gt_words), 1)
-            if overlap >= 0.6:
-                recall_hit = True
-                break
+    # For abstention questions: correct if we return no_match
+    if is_abstention:
+        recall_hit = no_match or result.get("result_count", 0) == 0
+    else:
+        # Check exact containment
+        answer_lower = answer.lower()
+        recall_hit = any(
+            answer_lower in text or text in answer_lower
+            for text in retrieved_texts if text
+        )
+
+        # Partial match: 60% word overlap
+        if not recall_hit:
+            answer_words = set(answer_lower.split())
+            for text in retrieved_texts:
+                text_words = set(text.split())
+                if not answer_words:
+                    break
+                overlap = len(answer_words & text_words) / len(answer_words)
+                if overlap >= 0.6:
+                    recall_hit = True
+                    break
+
+    # Build hypothesis (our system's answer) from retrieved context
+    if is_abstention and (no_match or not retrieved_texts):
+        hypothesis = "I don't have any memory of that."
+    elif retrieved_texts:
+        # Use the top retrieved entry as our answer basis
+        hypothesis = retrieved_texts[0] if retrieved_texts else ""
+    else:
+        hypothesis = "I don't have any memory of that."
 
     return {
         "question_id": qid,
-        "category": category,
-        "query": query,
-        "retrieved": result.get("local_context", []),
-        "ground_truth": ground_truth,
+        "question_type": qtype,
+        "question": question,
+        "answer": answer,
+        "hypothesis": hypothesis,
         "recall_hit": recall_hit,
+        "is_abstention": is_abstention,
         "search_mode": result.get("search_mode", "unknown"),
         "result_count": result.get("result_count", 0),
-        "no_match": result.get("no_match", False),
+        "no_match": no_match,
         "latency_ms": latency,
     }
 
 
-def run_benchmark(data: dict) -> dict:
+def run_benchmark(data: dict, progress: bool = True) -> dict:
     """
-    Run the full benchmark evaluation.
+    Run the full LongMemEval benchmark.
+
+    For each instance:
+      1. Clear previous benchmark data
+      2. Ingest that instance's haystack sessions
+      3. Evaluate the question via recall()
+
+    This tests each question independently with its own history.
 
     Args:
         data: output from load_benchmark_data()
+        progress: print progress updates
 
     Returns:
-        {
-            "accuracy": float (0-1),
-            "by_category": {category: {accuracy, count, correct}},
-            "total_questions": int,
-            "total_correct": int,
-            "avg_latency_ms": float,
-            "search_mode_distribution": {"semantic": int, "keyword": int},
-            "details": [per-question results],
-        }
+        Full results dict with accuracy, per-category breakdown, details.
     """
-    questions = data.get("questions", [])
-    answers = data.get("answers", {})
-
-    if not questions:
-        return {"error": "No questions found in benchmark data"}
-
-    # Ingest sessions first
-    sessions = data.get("sessions", [])
-    if sessions:
-        ingest_result = ingest_sessions(sessions)
-        print(f"Ingested: {ingest_result}")
+    instances = data.get("instances", [])
+    if not instances:
+        return {"error": "No instances found in benchmark data"}
 
     details = []
     correct = 0
     total_latency = 0
     by_category = {}
-    mode_counts = {"semantic": 0, "keyword": 0}
+    mode_counts = {}
 
-    for q in questions:
-        qid = q.get("id", str(len(details)))
-        gt = answers.get(qid, q.get("answer", ""))
+    for idx, instance in enumerate(instances):
+        if progress and idx % 50 == 0:
+            print(f"  [{idx}/{len(instances)}] Processing...")
 
-        result = evaluate_question(q, gt)
+        # Fresh state per question
+        clear_benchmark_branches()
+        ingest_instance(instance)
+
+        # Evaluate
+        result = evaluate_question(instance)
         details.append(result)
 
         if result["recall_hit"]:
@@ -248,7 +253,7 @@ def run_benchmark(data: dict) -> dict:
         total_latency += result["latency_ms"]
 
         # Track by category
-        cat = result["category"]
+        cat = result["question_type"]
         if cat not in by_category:
             by_category[cat] = {"correct": 0, "count": 0}
         by_category[cat]["count"] += 1
@@ -260,12 +265,15 @@ def run_benchmark(data: dict) -> dict:
         mode_counts[mode] = mode_counts.get(mode, 0) + 1
 
     # Calculate accuracies
-    total = len(questions)
+    total = len(instances)
     for cat_data in by_category.values():
         cat_data["accuracy"] = (
             cat_data["correct"] / cat_data["count"]
             if cat_data["count"] > 0 else 0.0
         )
+
+    # Cleanup
+    clear_benchmark_branches()
 
     return {
         "accuracy": correct / total if total > 0 else 0.0,
@@ -274,41 +282,59 @@ def run_benchmark(data: dict) -> dict:
         "total_correct": correct,
         "avg_latency_ms": total_latency / total if total > 0 else 0,
         "search_mode_distribution": mode_counts,
+        "source_file": data.get("metadata", {}).get("source_file", "unknown"),
         "details": details,
     }
 
 
+def export_hypotheses(results: dict, output_path: str):
+    """
+    Export results as JSONL for official LongMemEval GPT-4o evaluation.
+
+    Format: one JSON object per line with question_id and hypothesis.
+
+    Then run:
+        cd LongMemEval/src/evaluation
+        python3 evaluate_qa.py gpt-4o <output_path> <data_file>
+        python3 print_qa_metrics.py gpt-4o <output_path>.log <data_file>
+    """
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    with open(output_path, "w") as f:
+        for detail in results.get("details", []):
+            line = json.dumps({
+                "question_id": detail["question_id"],
+                "hypothesis": detail["hypothesis"],
+            })
+            f.write(line + "\n")
+    print(f"Exported {len(results.get('details', []))} hypotheses to {output_path}")
+
+
 def generate_report(results: dict) -> str:
-    """
-    Generate a human-readable benchmark report.
-
-    Args:
-        results: output from run_benchmark()
-
-    Returns:
-        Formatted report text.
-    """
+    """Generate a human-readable benchmark report."""
     lines = []
     lines.append("=" * 60)
     lines.append("  MEMORY VAULT — LongMemEval Benchmark Report")
     lines.append("=" * 60)
     lines.append("")
 
+    src = results.get("source_file", "unknown")
+    lines.append(f"Dataset: {src}")
+
     acc = results.get("accuracy", 0)
     total = results.get("total_questions", 0)
     correct = results.get("total_correct", 0)
 
-    lines.append(f"Overall Accuracy: {acc:.1%} ({correct}/{total})")
-    lines.append(f"Average Latency:  {results.get('avg_latency_ms', 0):.0f}ms")
+    lines.append(f"Overall Retrieval Accuracy: {acc:.1%} ({correct}/{total})")
+    lines.append(f"Average Latency: {results.get('avg_latency_ms', 0):.0f}ms")
     lines.append("")
 
     # By category
     lines.append("By Category:")
-    lines.append("-" * 50)
+    lines.append("-" * 55)
     for cat, data in sorted(results.get("by_category", {}).items()):
         bar = "#" * int(data["accuracy"] * 20)
         lines.append(
-            f"  {cat:<25} {data['accuracy']:>6.1%} "
+            f"  {cat:<30} {data['accuracy']:>6.1%} "
             f"({data['correct']}/{data['count']}) {bar}"
         )
     lines.append("")
@@ -320,14 +346,17 @@ def generate_report(results: dict) -> str:
         lines.append(f"  {mode}: {count}")
     lines.append("")
 
-    # Comparison with known benchmarks
-    lines.append("Comparison:")
-    lines.append("-" * 50)
-    lines.append(f"  Memory Vault:  {acc:.1%}")
-    lines.append(f"  MemPal (raw):  96.6%")
-    lines.append(f"  MemPal (rerank): 100%")
-    lines.append(f"  Mem0:          ~48%")
+    # Comparison
+    lines.append("Comparison (retrieval accuracy):")
+    lines.append("-" * 55)
+    lines.append(f"  Memory Vault (this run): {acc:.1%}")
+    lines.append(f"  MemPal (raw):            96.6%")
+    lines.append(f"  MemPal (rerank):         100%")
+    lines.append(f"  Mem0:                    ~48%")
     lines.append("")
+    lines.append("Note: official scoring requires GPT-4o judge.")
+    lines.append("Run export_hypotheses() then use LongMemEval's evaluate_qa.py")
 
+    lines.append("")
     lines.append("=" * 60)
     return "\n".join(lines)
