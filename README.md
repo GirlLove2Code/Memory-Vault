@@ -221,7 +221,7 @@ This is the most common setup mistake. The code works. The agent just doesn't kn
 
 ```bash
 # Clone
-git clone https://github.com/vivioo-io/Memory-Vault.git
+git clone https://github.com/Vivioo-io/Memory-Vault.git
 cd Memory-Vault
 
 # Install
