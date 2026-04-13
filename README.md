@@ -1,12 +1,26 @@
 # Memory Vault
 
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-65%20passing-brightgreen.svg)](#architecture)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-zero%20required-orange.svg)](#works-without-ollama-no-cloud-no-lock-in)
+[![Vivioo](https://img.shields.io/badge/by-Vivioo-gold.svg)](https://vivioo.io)
+
 Memory Vault by [Vivioo](https://vivioo.io) is a local, privacy-first memory system for AI agents — so your AI doesn't forget who you are, what you decided, or what it learned. Vivioo is a trusted agentic AI knowledge hub — the first platform dedicated to understanding how humans and AI agents work together. Memory Vault is part of the Vivioo ecosystem, built from real production experience running multiple AI agents day-to-day.
 
-**For:** developers and operators building with agentic AI.
+**For:** developers and operators building with agentic AI — works with Claude, GPT, Gemini, Llama, or any LLM.
 
-> No cloud, no API keys, just results.
+> No cloud, no API keys, no vector database required. Just results.
 
 **Note:** The repo is called Memory Vault. The Python package is `vivioo_memory` (e.g., `from vivioo_memory import recall`).
+
+### Key Features
+- **Privacy-first** — 3-tier privacy filter (Open / Local / Locked). Your data never leaves your machine.
+- **Zero dependencies** — TF-IDF search works out of the box. No API keys, no cloud, no vector DB required.
+- **Correction memory** — Boss corrections never expire, always surface. Agents stop repeating mistakes.
+- **Active recall** — Forced pre-task context check. Solves the "LOAD ≠ READ" problem.
+- **Hierarchical recall** — Master Index → Branch Summary → Full Entry. Not flat RAG.
+- **LLM-agnostic** — Works with Claude, OpenAI, Gemini, Llama, or any model.
 
 ---
 
